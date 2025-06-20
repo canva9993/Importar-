@@ -2,103 +2,66 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Conversor de Video/Audio a Link</title>
+  <title>Subir MP3/MP4 y Obtener Link</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f9e6f0;
+      background-color: #f7f0ff;
       text-align: center;
-      padding: 40px;
+      padding: 30px;
     }
-    h1 {
-      color: #e30e74;
-    }
-    .boton {
-      padding: 12px 25px;
-      margin: 10px;
-      font-size: 16px;
-      background-color: #e30e74;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .boton:hover {
-      background-color: #c20c65;
-    }
-    #progress {
-      font-size: 24px;
-      margin: 20px 0;
-      color: #333;
+    input[type="file"] {
+      margin: 20px;
     }
     #link {
-      word-wrap: break-word;
       margin-top: 20px;
+      word-break: break-all;
     }
   </style>
 </head>
 <body>
-
-  <h1>Conversor de Video/Audio</h1>
-  <p>Selecciona un archivo de tu galería:</p>
-
-  <input type="file" id="fileInput" accept="video/*,audio/*">
-  <br><br>
-  <button class="boton" onclick="convertirArchivo()">Convertir a Link</button>
-
-  <div id="progress"></div>
-  <div id="link"></div>
+  <h1>Sube tu archivo MP3 o MP4</h1>
+  <input type="file" id="fileInput" accept=".mp3,.mp4">
+  <br>
+  <button onclick="uploadFile()">Subir y Obtener Link</button>
+  <p id="status"></p>
+  <p id="link"></p>
 
   <script>
-    function convertirArchivo() {
-      const input = document.getElementById('fileInput');
-      const file = input.files[0];
+    async function uploadFile() {
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      const status = document.getElementById('status');
+      const link = document.getElementById('link');
 
       if (!file) {
-        alert("Por favor selecciona un archivo.");
+        status.textContent = "Selecciona un archivo MP3 o MP4.";
         return;
       }
 
-      const progress = document.getElementById('progress');
-      const linkDiv = document.getElementById('link');
-      linkDiv.innerHTML = '';
-      progress.innerText = 'Convirtiendo...';
+      status.textContent = "Subiendo...";
+      link.textContent = "";
 
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
+      const formData = new FormData();
+      formData.append("file", file);
 
-      let porcentaje = 0;
-
-      // Simula el progreso de carga según tamaño del archivo
-      const interval = setInterval(() => {
-        if (porcentaje >= 100) {
-          clearInterval(interval);
+      try {
+        const res = await fetch("https://store1.gofile.io/uploadFile", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if (data.status === "ok") {
+          const fileUrl = data.data.downloadPage;
+          status.textContent = "¡Archivo subido con éxito!";
+          link.innerHTML = `<a href="${fileUrl}" target="_blank">${fileUrl}</a>`;
         } else {
-          porcentaje += Math.ceil(Math.random() * 5); // Subida aleatoria
-          if (porcentaje > 100) porcentaje = 100;
-          progress.innerText = `Progreso: ${porcentaje}%`;
+          status.textContent = "Error al subir archivo.";
         }
-      }, Math.max(30, 300000 / file.size)); // más lento con archivos más grandes
-
-      reader.onload = () => {
-        clearInterval(interval);
-        progress.innerText = "¡Conversión completa!";
-        const dataUrl = reader.result;
-
-        const urlElement = document.createElement('textarea');
-        urlElement.rows = 4;
-        urlElement.cols = 50;
-        urlElement.value = dataUrl;
-        linkDiv.appendChild(document.createTextNode("Tu enlace para compartir:"));
-        linkDiv.appendChild(document.createElement("br"));
-        linkDiv.appendChild(urlElement);
-      };
-
-      reader.onerror = () => {
-        progress.innerText = "Error al convertir el archivo.";
-      };
+      } catch (error) {
+        status.textContent = "Error en la conexión.";
+      }
     }
   </script>
-
 </body>
 </html>
